@@ -1,0 +1,11 @@
+[package]
+name = "oci-ftrace-syscall-analyzer"
+version = "0.1.0"
+authors = ["Kenta Tada <Kenta.Tada@sony.com>"]
+edition = "2018"
+
+[dependencies]
+serde = "1.0.90"
+serde_json = "1.0"
+clap = "2.31"
+proc-mounts = "0.2.2"
