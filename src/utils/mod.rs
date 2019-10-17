@@ -19,6 +19,10 @@ pub fn search_tracefs_path() -> String {
     path = format!("{:#?}", "");
     for mount_res in MountIter::new().unwrap() {
         let mount = mount_res.unwrap();
+        if mount.source == PathBuf::from("debugfs") {
+            path = format!("{}/tracing", mount.dest.display());
+            break;
+        }
         if mount.source == PathBuf::from("tracefs") {
             path = format!("{}", mount.dest.display());
             break;
