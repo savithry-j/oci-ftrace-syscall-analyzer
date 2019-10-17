@@ -6,6 +6,10 @@
 
 You can launch the rootless container using this tool when you use SUID or modify permission to the directories of tracefs.
 
+## Requirements
+
+- You need to mount tracefs to use this tool.
+
 ## Usage
 
 ### From low level runtime
