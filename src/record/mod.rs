@@ -9,8 +9,8 @@ fn start_syscall_logging(trace_setting_path: &str, pid: &str, bufsize: &str) {
     if bufsize != "" {
         change_bufsize(trace_setting_path, bufsize);
     }
-    clear_ringbuf(trace_setting_path);
     filter_by_pid(trace_setting_path, pid);
+    clear_ringbuf(trace_setting_path);
 }
 
 fn enable_syscall_all(trace_setting_path: &str) {
