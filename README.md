@@ -16,7 +16,7 @@
 
 ### From low level runtime
 
-You need to add the prestart and poststart hook in config.json.
+You need to add the prestart and poststop hook in config.json.
 ```json
   "hooks": {
     "prestart": [
@@ -106,7 +106,7 @@ $ tail -n 10 ftrace_syscalls_dump.log
 
 #### CRI-O and Podman integration sample
 
-(WIP) prestart setting exmaple for oci-hooks
+(WIP) You need to prepare for the prestart and poststop settings in the CRI-O's oci-hooks.
 ```
 $ cat /etc/containers/oci/hooks.d/ftrace-syscall-analyzer-prehook.json
 {
