@@ -4,11 +4,10 @@
 
 `oci-ftrace-syscall-analyzer` is an experimental tool to trace syscalls inside containers without any debug tools in Pod. This tool uses ftrace to debug containers transparently.
 
-You can launch the rootless container using this tool when you use SUID or modify permission to the directories of tracefs.
-
 ## Requirements
 
 - You need to mount tracefs to use this tool.
+- You can launch the rootless container using this tool when you set the Linux capability of `CAP_DAC_OVERRIDE` to the binary of oci-ftrace-syscall-analyzer or modify permission to the directories of tracefs
 
 ## Usage
 
@@ -43,10 +42,10 @@ You need to add the prestart and poststart hook in config.json.
 
 #### e.g. How to integrate oci-ftrace-syscall-analyzer with rootless runc
 
-##### 1. Set SUID to oci-ftrace-syscall-analyzer which is the owner of root. Or change permission to the directories of tracefs.
+##### 1. Set the Linux capability of `CAP_DAC_OVERRIDE` to oci-ftrace-syscall-analyzer. Or change permission to the directories of tracefs.
 
 ```
-# chmod u+s /usr/local/bin/oci-ftrace-syscall-analyzer
+# setcap CAP_DAC_OVERRIDE+ep /usr/local/bin/oci-ftrace-syscall-analyzer
 ```
 
 ##### 2. Prepare for the sample container
@@ -147,10 +146,10 @@ $ cat /etc/containers/oci/hooks.d/syscall-analyzer-posthook.json
 
 #### e.g. How to integrate oci-ftrace-syscall-analyzer with Podman using annotations
 
-##### 1. Set SUID to oci-ftrace-syscall-analyzer which is the owner of root. Or change permission to the directories of tracefs.
+##### 1. Set the Linux capability of `CAP_DAC_OVERRIDE` to oci-ftrace-syscall-analyzer. Or change permission to the directories of tracefs.
 
 ```
-# chmod u+s /usr/local/bin/oci-ftrace-syscall-analyzer
+# setcap CAP_DAC_OVERRIDE+ep /usr/local/bin/oci-ftrace-syscall-analyzer
 ```
 
 ##### 2. Modify Podman OCI hook settings
