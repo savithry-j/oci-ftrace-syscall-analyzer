@@ -63,7 +63,7 @@ pub fn record(record_args: &ArgMatches) {
         process::exit(0);
     }
 
-    let tracefs_path = utils::search_tracefs_path();
+    let tracefs_path = utils::search_tracefs_path().expect(&format!("Failed to search tracefs"));
     let trace_path = format!(
         "{}/instances/{}",
         &tracefs_path,

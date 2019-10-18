@@ -14,7 +14,7 @@ pub fn get_states_from_stdin() -> Value {
     state_vals
 }
 
-pub fn search_tracefs_path() -> String {
+pub fn search_tracefs_path() -> Result<String, String> {
     let mut path;
     path = format!("{:#?}", "");
     for mount_res in MountIter::new().unwrap() {
@@ -29,8 +29,8 @@ pub fn search_tracefs_path() -> String {
         }
     }
 
-    if path == "" {
-        panic!("cannot find tracefs");
+    match &*path {
+        "" => Err("cannot find tracefs".to_string()),
+        _ => Ok(path.to_string()),
     }
-    path.to_string()
 }

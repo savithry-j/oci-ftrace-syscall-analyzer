@@ -27,7 +27,7 @@ pub fn report(report_args: &ArgMatches) {
         panic!("cannot find container id");
     }
 
-    let tracefs_path = utils::search_tracefs_path();
+    let tracefs_path = utils::search_tracefs_path().expect(&format!("Failed to search tracefs"));
     let trace_path = format!(
         "{}/instances/{}",
         &tracefs_path,
