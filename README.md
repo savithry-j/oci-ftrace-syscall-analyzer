@@ -11,7 +11,7 @@
 
 ## Usage
 
-- This tool is only executed inside container hooks.
+- This tool is only executed inside container hooks without report --dump option.
 - The annotation is used to control trace settings from Kubernetes. When you set the key of "oci-ftrace-syscall-analyzer/trace" to "true" with --use-annots option, oci-ftrace-syscall-analyzer is executed.
 
 ### From low level runtime
@@ -211,3 +211,10 @@ $ cat /etc/containers/oci/hooks.d/syscall-analyzer-posthook.json
 ### From Kubernetes
 
 (WIP) You can pass options to high level runtimes using annotations.
+
+### Live dump option
+
+You can also get syscall logs while container is running. You can get the running container ID from some commands like kubectl describe pods and runc list and so on.
+```
+$ oci-ftrace-syscall-analyzer report --dump [container-id]
+```

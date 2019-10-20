@@ -20,11 +20,15 @@ fn convert_error_info(line: &str, error_info: &HashMap<&str, err_converter::Erro
 }
 
 pub fn report(report_args: &ArgMatches) {
-    let state_vals = utils::get_states_from_stdin();
-
-    let cid = format!("{}", state_vals["id"].to_string());
-    if cid == "" {
-        panic!("cannot find container id");
+    let mut cid;
+    if report_args.is_present("container-id") {
+        cid = report_args.value_of("container-id").unwrap().to_string();
+    } else {
+        let state_vals = utils::get_states_from_stdin();
+        cid = format!("{}", state_vals["id"].to_string());
+        if cid == "" {
+            panic!("cannot find container id");
+        }
     }
 
     let tracefs_path = utils::search_tracefs_path().expect(&format!("Failed to search tracefs"));
@@ -47,8 +51,11 @@ pub fn report(report_args: &ArgMatches) {
     output_file
         .flush()
         .expect(&format!("cannot dump to {} ", &container_trace_file));
-    fs::remove_dir(&trace_path).expect(&format!(
-        "cannot remove ftrace instances dir {}",
-        &trace_path
-    ));
+
+    if !report_args.is_present("container-id") {
+        fs::remove_dir(&trace_path).expect(&format!(
+            "cannot remove ftrace instances dir {}",
+            &trace_path
+        ));
+    }
 }

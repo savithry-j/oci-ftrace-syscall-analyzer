@@ -37,6 +37,12 @@ fn main() {
                         .takes_value(true)
                         .default_value("./ftrace_syscalls_dump.log")
                         .help("output file path"),
+                )
+                .arg(
+                    Arg::with_name("container-id")
+                        .long("dump")
+                        .takes_value(true)
+                        .help("Dump specified container ID's logs while running"),
                 ),
         );
     let cmd_args = app.clone().get_matches();
