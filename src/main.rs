@@ -57,5 +57,5 @@ fn main() {
     }
 
     app.print_help().unwrap();
-    println!("");
+    println!();
 }

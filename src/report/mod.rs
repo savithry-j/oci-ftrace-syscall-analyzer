@@ -25,13 +25,14 @@ pub fn report(report_args: &ArgMatches) {
         cid = report_args.value_of("container-id").unwrap().to_string();
     } else {
         let state_vals = utils::get_states_from_stdin();
-        cid = format!("{}", state_vals["id"].to_string());
+        cid = state_vals["id"].to_string();
         if cid == "" {
             panic!("cannot find container id");
         }
     }
 
-    let tracefs_path = utils::search_tracefs_path().expect(&format!("Failed to search tracefs"));
+    let tracefs_path =
+        utils::search_tracefs_path().unwrap_or_else(|_| panic!("Failed to search tracefs"));
     let trace_path = format!(
         "{}/instances/{}",
         &tracefs_path,
@@ -50,12 +51,10 @@ pub fn report(report_args: &ArgMatches) {
     }
     output_file
         .flush()
-        .expect(&format!("cannot dump to {} ", &container_trace_file));
+        .unwrap_or_else(|_| panic!("cannot dump to {} ", &container_trace_file));
 
     if !report_args.is_present("container-id") {
-        fs::remove_dir(&trace_path).expect(&format!(
-            "cannot remove ftrace instances dir {}",
-            &trace_path
-        ));
+        fs::remove_dir(&trace_path)
+            .unwrap_or_else(|_| panic!("cannot remove ftrace instances dir {}", &trace_path));
     }
 }
