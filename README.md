@@ -9,6 +9,17 @@
 - You need to mount tracefs to use this tool.
 - You can launch the rootless container using this tool when you set the Linux capability of `CAP_DAC_OVERRIDE` to the binary of oci-ftrace-syscall-analyzer or modify permission to the directories of tracefs
 
+## Install
+
+- Please download the binary from the release page for amd64 like below.
+```
+$ wget https://github.com/KentaTada/oci-ftrace-syscall-analyzer/releases/download/v0.1.1/oci-ftrace-syscall-analyzer.amd64
+$ sudo cp oci-ftrace-syscall-analyzer.amd64 /usr/local/bin/oci-ftrace-syscall-analyzer
+$ sudo chmod a+x /usr/local/bin/oci-ftrace-syscall-analyzer
+$ sudo setcap CAP_DAC_OVERRIDE+ep /usr/local/bin/oci-ftrace-syscall-analyzer
+```
+- You can build oci-ftrace-syscall-analyzer from the source code for architecture other than amd64.
+
 ## Usage
 
 - This tool is only executed inside container hooks without report --dump option.
@@ -104,7 +115,7 @@ $ tail -n 10 ftrace_syscalls_dump.log
 
 (WIP) You need to add OCI hook settings.
 
-#### CRI-O and Podman integration sample
+#### CRI-O integration sample
 
 (WIP) You need to prepare for the prestart and poststop settings in the CRI-O's oci-hooks.
 ```
@@ -115,20 +126,17 @@ $ cat /etc/containers/oci/hooks.d/ftrace-syscall-analyzer-prehook.json
     "path": "/usr/local/bin/oci-ftrace-syscall-analyzer",
     "args": [
       "oci-ftrcae-syscall-analyzer",
-      "record",
-      "--use-annots"
+      "record"
     ]
   },
   "when": {
-    "annotations": {
-      "oci-ftrace-syscall-analyzer/trace": "true"
-    }
+    "always": true
   },
   "stages": [
     "prestart"
   ]
 }
-$ cat /etc/containers/oci/hooks.d/syscall-analyzer-posthook.json
+$ cat /etc/containers/oci/hooks.d/ftrace-syscall-analyzer-posthook.json
 {
   "version": "1.0.0",
   "hook": {
@@ -136,9 +144,7 @@ $ cat /etc/containers/oci/hooks.d/syscall-analyzer-posthook.json
     "args": ["oci-ftrcae-syscall-analyzer", "report", "--output", "/tmp/syscalllogs/ftrace_syscalls_dump.log"]
   },
   "when": {
-    "annotations": {
-        "oci-ftrace-syscall-analyzer/trace": "true"
-    }
+    "always": true
   },
   "stages": ["poststop"]
 }
@@ -180,7 +186,7 @@ $ cat /etc/containers/oci/hooks.d/ftrace-syscall-analyzer-prehook.json
     "prestart"
   ]
 }
-$ cat /etc/containers/oci/hooks.d/syscall-analyzer-posthook.json
+$ cat /etc/containers/oci/hooks.d/ftrace-syscall-analyzer-posthook.json
 {
   "version": "1.0.0",
   "hook": {
