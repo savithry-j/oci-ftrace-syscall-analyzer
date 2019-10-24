@@ -1,7 +1,8 @@
 [package]
 name = "oci-ftrace-syscall-analyzer"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Kenta Tada <Kenta.Tada@sony.com>"]
+license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
