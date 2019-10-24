@@ -3,22 +3,28 @@ use clap::ArgMatches;
 use std::fs;
 use std::process;
 
-fn start_syscall_logging(trace_setting_path: &str, pid: &str, bufsize: &str) {
-    enable_syscall_all(trace_setting_path);
+fn start_syscall_logging(trace_setting_path: &str, pid: &str, bufsize: &str, syscall_list: Option<clap::Values>) {
+    change_syscall_enable_all(trace_setting_path, false);
     enable_forktrace(trace_setting_path);
     if bufsize != "" {
         change_bufsize(trace_setting_path, bufsize);
     }
+    match syscall_list {
+        Some(syscalls) => filter_by_syscalls(trace_setting_path, syscalls),
+        None           => change_syscall_enable_all(trace_setting_path, true),
+    };
     filter_by_pid(trace_setting_path, pid);
     clear_ringbuf(trace_setting_path);
 }
 
-fn enable_syscall_all(trace_setting_path: &str) {
+fn change_syscall_enable_all(trace_setting_path: &str, enable: bool) {
     let syscall_enable = format!("{}/events/syscalls/enable", &trace_setting_path);
-    fs::write(&syscall_enable, "0")
-        .unwrap_or_else(|_| panic!("Failed to write to {}", &syscall_enable));
-    fs::write(&syscall_enable, "1")
-        .unwrap_or_else(|_| panic!("Failed to write to {}", &syscall_enable));
+    match enable {
+        false => fs::write(&syscall_enable, "0")
+            .unwrap_or_else(|_| panic!("Failed to write to {}", &syscall_enable)),
+        true  => fs::write(&syscall_enable, "1")
+            .unwrap_or_else(|_| panic!("Failed to write to {}", &syscall_enable)),
+    };
 }
 
 fn enable_forktrace(trace_setting_path: &str) {
@@ -41,6 +47,21 @@ fn filter_by_pid(trace_setting_path: &str, pid: &str) {
     let pid_filter = format!("{}/set_event_pid", &trace_setting_path);
     fs::write(&pid_filter, pid.to_string())
         .unwrap_or_else(|_| panic!("Failed to write to {}", &pid_filter));
+}
+
+fn filter_by_syscalls(trace_setting_path: &str, syscalls: clap::Values) {
+    for syscall in syscalls {
+        let syscalls_enter = format!(
+            "{}/events/syscalls/sys_enter_{}/enable",
+            &trace_setting_path, &syscall
+        );
+        fs::write(&syscalls_enter, "1").expect(&format!("Failed to write to {}", &syscalls_enter));
+        let syscalls_exit = format!(
+            "{}/events/syscalls/sys_exit_{}/enable",
+            &trace_setting_path, &syscall
+        );
+        fs::write(&syscalls_exit, "1").expect(&format!("Failed to write to {}", &syscalls_exit));
+    };
 }
 
 pub fn record(record_args: &ArgMatches) {
@@ -82,5 +103,6 @@ pub fn record(record_args: &ArgMatches) {
         &trace_path,
         &pid.trim_matches('\\').trim_matches('"'),
         &bufsize,
+        record_args.values_of("syscalls"),
     );
 }
