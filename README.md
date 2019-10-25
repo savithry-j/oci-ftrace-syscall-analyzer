@@ -2,7 +2,8 @@
 
 ## Introduction
 
-`oci-ftrace-syscall-analyzer` is an experimental tool to trace syscalls inside containers without any debug tools in Pod. This tool uses ftrace to debug containers transparently.
+- `oci-ftrace-syscall-analyzer` is an experimental tool to trace syscalls inside containers without any debug tools in Pod. This tool uses ftrace to debug containers transparently.
+- Overview of `oci-ftrace-syscall-analyzer` is explained on https://speakerdeck.com/kentatada/debug-application-inside-kubernetes-using-linux-kernel-tools
 
 ## Requirements
 
