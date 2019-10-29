@@ -10,7 +10,7 @@
 - You need to mount tracefs to use this tool.
 - You can launch the rootless container using this tool when you set the Linux capability of `CAP_DAC_OVERRIDE` to the binary of oci-ftrace-syscall-analyzer or modify permission to the directories of tracefs
 
-## Install
+## Install from Relese page
 
 - Please download the binary from the release page for amd64 like below.
 ```
@@ -20,6 +20,50 @@ $ sudo chmod a+x /usr/local/bin/oci-ftrace-syscall-analyzer
 $ sudo setcap CAP_DAC_OVERRIDE+ep /usr/local/bin/oci-ftrace-syscall-analyzer
 ```
 - You can build oci-ftrace-syscall-analyzer from the source code for architecture other than amd64.
+
+## Install from Source
+
+### On Linux
+
+#### Install and setup rust with rustup
+
+- Building oci-ftrace-syscall-analyzer requires rustc version 1.32.0 or later.
+- If you don't have rust yet, run:
+```
+$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+- If you have an old version, run:
+```
+$ rustup update
+```
+
+#### Getting and Building the oci-ftrace-syscall-analyzer Sources
+
+- Clone sources from git repo
+```
+$ git clone https://github.com/KentaTada/oci-ftrace-syscall-analyzer.git
+```
+- Build sources
+```
+$ cd oci-ftrace-syscall-analyzer
+$ cargo build --release
+```
+- Install binary
+```
+$ sudo cp target/release/oci-ftrace-syscall-analyzer /usr/local/bin/
+$ sudo chmod a+x /usr/local/bin/oci-ftrace-syscall-analyzer
+$ sudo setcap CAP_DAC_OVERRIDE+ep /usr/local/bin/oci-ftrace-syscall-analyzer
+```
+
+### (Advanced) Building as a Static Binary
+
+- The binary built by the above method is dynamically linked binary. But the released binary is a static binary.
+- If you want to build static binary, you need to get MUSL support.
+ - For example, on x86_64 architecture, run:
+```
+$ rustup target add x86_64-unknown-linux-musl
+$ cargo build --target x86_64-unknown-linux-musl
+```
 
 ## Usage
 
