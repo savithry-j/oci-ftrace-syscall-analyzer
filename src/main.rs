@@ -26,6 +26,13 @@ fn main() {
                         .long("buffer-size-kb")
                         .takes_value(true)
                         .help("The ring buffer size for individual CPUs in KB"),
+                )
+                .arg(
+                    Arg::with_name("syscalls")
+                        .long("syscalls")
+                        .takes_value(true)
+                        .use_delimiter(true)
+                        .help("If given, trace only specified the set of system calls")
                 ),
         )
         .subcommand(
