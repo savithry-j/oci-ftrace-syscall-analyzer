@@ -4,27 +4,29 @@ use std::fs;
 use std::process;
 
 fn start_syscall_logging(trace_setting_path: &str, pid: &str, bufsize: &str, syscall_list: Option<clap::Values>) {
-    change_syscall_enable_all(trace_setting_path, false);
+    disable_syscall_all(trace_setting_path);
     enable_forktrace(trace_setting_path);
     if bufsize != "" {
         change_bufsize(trace_setting_path, bufsize);
     }
     match syscall_list {
         Some(syscalls) => filter_by_syscalls(trace_setting_path, syscalls),
-        None           => change_syscall_enable_all(trace_setting_path, true),
+        None           => enable_syscall_all(trace_setting_path),
     };
     filter_by_pid(trace_setting_path, pid);
     clear_ringbuf(trace_setting_path);
 }
 
-fn change_syscall_enable_all(trace_setting_path: &str, enable: bool) {
+fn enable_syscall_all(trace_setting_path: &str) {
     let syscall_enable = format!("{}/events/syscalls/enable", &trace_setting_path);
-    match enable {
-        false => fs::write(&syscall_enable, "0")
-            .unwrap_or_else(|_| panic!("Failed to write to {}", &syscall_enable)),
-        true  => fs::write(&syscall_enable, "1")
-            .unwrap_or_else(|_| panic!("Failed to write to {}", &syscall_enable)),
-    };
+    fs::write(&syscall_enable, "1")
+        .unwrap_or_else(|_| panic!("Failed to write to {}", &syscall_enable));
+}
+
+fn disable_syscall_all(trace_setting_path: &str) {
+    let syscall_enable = format!("{}/events/syscalls/enable", &trace_setting_path);
+    fs::write(&syscall_enable, "0")
+        .unwrap_or_else(|_| panic!("Failed to write to {}", &syscall_enable));
 }
 
 fn enable_forktrace(trace_setting_path: &str) {
