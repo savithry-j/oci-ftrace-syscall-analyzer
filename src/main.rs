@@ -1,4 +1,5 @@
 extern crate clap;
+extern crate libc;
 extern crate proc_mounts;
 extern crate serde;
 extern crate serde_json;
@@ -32,7 +33,7 @@ fn main() {
                         .long("syscalls")
                         .takes_value(true)
                         .use_delimiter(true)
-                        .help("If given, trace only specified the set of system calls")
+                        .help("If given, trace only specified the set of system calls"),
                 ),
         )
         .subcommand(
@@ -46,8 +47,16 @@ fn main() {
                         .help("output file path"),
                 )
                 .arg(
+                    Arg::with_name("profile-output")
+                        .long("seccomp-profile")
+                        .takes_value(true)
+                        .default_value("./seccomp.json")
+                        .conflicts_with("container-id")
+                        .help("Generate seccomp profile by the result of trace"),
+                )
+                .arg(
                     Arg::with_name("container-id")
-                        .long("dump")
+                        .long("livedump")
                         .takes_value(true)
                         .help("Dump specified container ID's logs while running"),
                 ),

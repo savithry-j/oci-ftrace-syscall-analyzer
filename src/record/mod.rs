@@ -68,12 +68,14 @@ fn filter_by_syscalls(trace_setting_path: &str, syscalls: clap::Values) {
             "{}/events/syscalls/sys_enter_{}/enable",
             &trace_setting_path, &syscall
         );
-        fs::write(&syscalls_enter, "1").expect(&format!("Failed to write to {}", &syscalls_enter));
+        fs::write(&syscalls_enter, "1")
+            .unwrap_or_else(|_| panic!("Failed to write to {}", &syscalls_enter));
         let syscalls_exit = format!(
             "{}/events/syscalls/sys_exit_{}/enable",
             &trace_setting_path, &syscall
         );
-        fs::write(&syscalls_exit, "1").expect(&format!("Failed to write to {}", &syscalls_exit));
+        fs::write(&syscalls_exit, "1")
+            .unwrap_or_else(|_| panic!("Failed to write to {}", &syscalls_exit));
     }
 }
 
