@@ -9,6 +9,13 @@ use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 
+fn remove_raw_syscall(line: &str) -> Option<String> {
+    if line.find("sys_enter:").is_some() || line.find("sys_exit:").is_some() {
+        return None;
+    }
+    Some(line.to_string())
+}
+
 fn convert_error_info(line: &str, error_info: &HashMap<&str, err_converter::Error>) -> String {
     if let Some(pos) = line.rfind("0x") {
         let ret = line.get(pos..).unwrap();
@@ -44,10 +51,11 @@ pub fn report(report_args: &ArgMatches) {
     let mut output_file = BufWriter::new(File::create(output_file_path).unwrap());
     let error_info = error_info!();
     for line in BufReader::new(File::open(&container_trace_file).unwrap()).lines() {
-        let out = line.unwrap();
-        output_file
-            .write_all(convert_error_info(&out, &error_info).as_bytes())
-            .unwrap();
+        if let Some(out) = remove_raw_syscall(&line.unwrap()) {
+            output_file
+                .write_all(convert_error_info(&out, &error_info).as_bytes())
+                .unwrap();
+        }
     }
     output_file
         .flush()

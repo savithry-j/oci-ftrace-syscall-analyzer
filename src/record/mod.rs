@@ -3,18 +3,29 @@ use clap::ArgMatches;
 use std::fs;
 use std::process;
 
-fn start_syscall_logging(trace_setting_path: &str, pid: &str, bufsize: &str, syscall_list: Option<clap::Values>) {
+fn start_raw_syscall_logging(trace_setting_path: &str) {
+    disable_raw_syscall_all(trace_setting_path);
+    enable_raw_syscall_all(trace_setting_path);
+}
+
+fn disable_raw_syscall_all(trace_setting_path: &str) {
+    let syscall_enable = format!("{}/events/raw_syscalls/enable", &trace_setting_path);
+    fs::write(&syscall_enable, "0")
+        .unwrap_or_else(|_| panic!("Failed to write to {}", &syscall_enable));
+}
+
+fn enable_raw_syscall_all(trace_setting_path: &str) {
+    let syscall_enable = format!("{}/events/raw_syscalls/enable", &trace_setting_path);
+    fs::write(&syscall_enable, "1")
+        .unwrap_or_else(|_| panic!("Failed to write to {}", &syscall_enable));
+}
+
+fn start_syscall_logging(trace_setting_path: &str, syscall_list: Option<clap::Values>) {
     disable_syscall_all(trace_setting_path);
-    enable_forktrace(trace_setting_path);
-    if bufsize != "" {
-        change_bufsize(trace_setting_path, bufsize);
-    }
     match syscall_list {
         Some(syscalls) => filter_by_syscalls(trace_setting_path, syscalls),
-        None           => enable_syscall_all(trace_setting_path),
+        None => enable_syscall_all(trace_setting_path),
     };
-    filter_by_pid(trace_setting_path, pid);
-    clear_ringbuf(trace_setting_path);
 }
 
 fn enable_syscall_all(trace_setting_path: &str) {
@@ -63,7 +74,7 @@ fn filter_by_syscalls(trace_setting_path: &str, syscalls: clap::Values) {
             &trace_setting_path, &syscall
         );
         fs::write(&syscalls_exit, "1").expect(&format!("Failed to write to {}", &syscalls_exit));
-    };
+    }
 }
 
 pub fn record(record_args: &ArgMatches) {
@@ -101,10 +112,14 @@ pub fn record(record_args: &ArgMatches) {
         .value_of("buffer-size-kb")
         .unwrap_or("")
         .to_string();
-    start_syscall_logging(
-        &trace_path,
-        &pid.trim_matches('\\').trim_matches('"'),
-        &bufsize,
-        record_args.values_of("syscalls"),
-    );
+
+    enable_forktrace(&trace_path);
+    if bufsize != "" {
+        change_bufsize(&trace_path, &bufsize);
+    }
+    filter_by_pid(&trace_path, &pid.trim_matches('\\').trim_matches('"'));
+
+    start_raw_syscall_logging(&trace_path);
+    start_syscall_logging(&trace_path, record_args.values_of("syscalls"));
+    clear_ringbuf(&trace_path);
 }
