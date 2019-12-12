@@ -67,7 +67,7 @@ $ cargo build --target x86_64-unknown-linux-musl
 
 ## Usage
 
-- This tool is only executed inside container hooks without report --dump option.
+- This tool is only executed inside container hooks without report --livedump option.
 - The annotation is used to control trace settings from Kubernetes. When you set the key of "oci-ftrace-syscall-analyzer/trace" to "true" with --use-annots option, oci-ftrace-syscall-analyzer is executed.
 
 ### From low level runtime
@@ -267,5 +267,119 @@ $ cat /etc/containers/oci/hooks.d/ftrace-syscall-analyzer-posthook.json
 
 You can also get syscall logs while container is running. You can get the running container ID from some commands like kubectl describe pods and runc list and so on.
 ```
-$ oci-ftrace-syscall-analyzer report --dump [container-id]
+$ oci-ftrace-syscall-analyzer report --livedump [container-id]
+```
+
+### (WIP) seccomp profile generator
+
+--seccomp-profile option generates seccomp profiles by the traced syscalls.
+**Notice: In crrent, generated profile is not accurate. The profile does not include syscalls that invoked from start of trace to start of container app.**
+
+#### e.g. How to generate profile with runC
+
+##### 1. Modify config.json to use hookdump seccomp-profile
+
+Add below to config.json.
+
+```json
+  "hooks": {
+    "prestart": [
+      {
+        "path": "/usr/local/bin/oci-ftrace-syscall-analyzer",
+        "args": [
+          "oci-ftrace-syscall-analyzer",
+          "record"
+        ]
+      }
+    ],
+    "poststop": [
+      {
+        "path": "/usr/local/bin/oci-ftrace-syscall-analyzer",
+        "args": [
+          "oci-ftrace-syscall-analyzer",
+          "report"
+	  "--seccomp-profile"
+        ]
+      }
+    ]
+  },
+```
+
+##### 2. Launch container
+
+e.g. Execute ls command in container.
+```
+$ runc run 1
+bin   dev   etc   home  proc  root  sys   tmp   usr   var
+```
+
+##### 3. Confirm syscall logsseccomp profile
+
+```
+$ cat seccomp.json
+{
+  "defaultAction": "SCMP_ACT_ERRNO",
+  "syscalls": [
+    {
+      "names": [
+        "arch_prctl",
+        "brk",
+        "close",
+        "execve",
+        "exit_group",
+        "fstat",
+        "futex",
+        "getdents64",
+        "getuid",
+        "ioctl",
+        "newfstatat",
+        "open",
+        "stat",
+        "time",
+        "write"
+      ],
+      "action": "SCMP_ACT_ALLOW"
+    }
+  ]
+}
+```
+
+##### 4. Add logsseccomp profile to config.json
+
+```
+$ cat config.json
+
+~~~~~
+
+"linux": {
+  "seccomp": {
+    "defaultAction": "SCMP_ACT_ERRNO",
+    "syscalls": [
+      {
+        "names": [
+          "arch_prctl",
+          "brk",
+          "close",
+          "execve",
+          "exit_group",
+          "fstat",
+          "futex",
+          "getdents64",
+          "getuid",
+          "ioctl",
+          "newfstatat",
+          "open",
+          "stat",
+          "time",
+          "write"
+        ],
+        "action": "SCMP_ACT_ALLOW"
+      }
+    ]
+  },
+
+~~~~~
+
+$ runc run 1
+bin   dev   etc   home  proc  root  sys   tmp   usr   var
 ```
