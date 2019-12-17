@@ -51,7 +51,6 @@ fn main() {
                         .long("seccomp-profile")
                         .takes_value(true)
                         .default_value("./seccomp.json")
-                        .conflicts_with("container-id")
                         .help("Generate seccomp profile by the result of trace"),
                 )
                 .arg(

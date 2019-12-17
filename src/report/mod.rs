@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::process;
 
 fn convert_syscall_id(line: &str, syscall_info: &HashMap<i64, &str>) -> Option<String> {
     let prefix = "NR ";
@@ -61,6 +62,10 @@ fn convert_error_info(line: &str, error_info: &HashMap<&str, err_converter::Erro
 }
 
 pub fn report(report_args: &ArgMatches) {
+    if 0 < report_args.occurrences_of("profile-output") && report_args.is_present("container-id") {
+        println!("The argument '--livedump' cannot be used with '--seccomp-profile");
+        process::exit(-1);
+    }
     let mut cid;
     if report_args.is_present("container-id") {
         cid = report_args.value_of("container-id").unwrap().to_string();
