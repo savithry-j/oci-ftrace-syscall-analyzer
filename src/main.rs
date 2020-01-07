@@ -29,6 +29,11 @@ fn main() {
                         .help("The ring buffer size for individual CPUs in KB"),
                 )
                 .arg(
+                    Arg::with_name("error-only")
+                        .long("--error-only")
+                        .help("If given, trace only when syscall returns error"),
+                )
+                .arg(
                     Arg::with_name("syscalls")
                         .long("syscalls")
                         .takes_value(true)
