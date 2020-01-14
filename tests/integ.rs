@@ -156,6 +156,24 @@ mod integration {
     }
 
     #[test]
+    fn error_filter() {
+        let trace_path = exec_analyzer_command("record_7", &["record", "--error-only"], None);
+        assert!(fs::metadata(&trace_path).is_ok());
+        assert_eq!(
+            "ret < 0\n",
+            String::from_utf8(
+                fs::read(&format!(
+                    "{}/events/syscalls/sys_exit_open/filter",
+                    &trace_path
+                ))
+                .unwrap()
+            )
+            .unwrap()
+        );
+        remove_trace_dir(&trace_path);
+    }
+
+    #[test]
     fn report() {
         exec_analyzer_command("report_1", &["record"], None);
         let log = &"./ftrace_syscalls_dump_1.log";
