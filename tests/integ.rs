@@ -5,11 +5,7 @@ use std::{fs, process, thread, time};
 #[cfg(test)]
 mod integration {
     use super::*;
-    fn exec_analyzer_command(
-        test_id: &str,
-        args: &[&str],
-        with_annotations: Option<bool>,
-    ) -> String {
+    fn exec_analyzer_command(cid: &str, args: &[&str], with_annotations: Option<bool>) {
         let mut child = Command::new("./target/debug/oci-ftrace-syscall-analyzer")
             .args(args)
             .stdin(Stdio::piped())
@@ -17,7 +13,6 @@ mod integration {
             .stderr(Stdio::null())
             .spawn()
             .unwrap();
-        let cid = &format!("analyzer_test_{}_{}", test_id, process::id());
         let input = if let Some(annots) = with_annotations {
             format!("{{\"pid\":{},\"id\":\"{}\",\"annotations\":{{\"oci-ftrace-syscall-analyzer/trace\":\"{}\"}}}}", process::id(), cid, annots)
         } else {
@@ -28,7 +23,6 @@ mod integration {
         stdin.write(input.as_bytes()).unwrap();
         let ecode = child.wait().expect("failed to wait on child");
         assert!(ecode.success());
-        format!("/sys/kernel/debug/tracing/instances/{}", cid)
     }
 
     fn remove_trace_dir(trace_path: &str) {
@@ -42,9 +36,23 @@ mod integration {
         }
     }
 
+    macro_rules! get_cid {
+        ($test_id:expr) => {{
+            &format!("analyzer_test_{}_{}", $test_id, process::id())
+        }};
+    }
+
+    macro_rules! get_tracefs_path {
+        ($cid:expr) => {{
+            &format!("/sys/kernel/debug/tracing/instances/{}", $cid)
+        }};
+    }
+
     #[test]
     fn trace_start() {
-        let trace_path = exec_analyzer_command("record_1", &["record"], None);
+        let cid = get_cid!("record_1");
+        let trace_path = get_tracefs_path!(cid);
+        exec_analyzer_command(cid, &["record"], None);
         assert!(fs::metadata(&trace_path).is_ok());
         assert_eq!(
             "1\n",
@@ -58,8 +66,9 @@ mod integration {
 
     #[test]
     fn set_buffer_size() {
-        let trace_path =
-            exec_analyzer_command("record_2", &["record", "--buffer-size-kb", "999"], None);
+        let cid = get_cid!("record_2");
+        let trace_path = get_tracefs_path!(cid);
+        exec_analyzer_command(cid, &["record", "--buffer-size-kb", "999"], None);
         assert!(fs::metadata(&trace_path).is_ok());
         assert_eq!(
             "999\n",
@@ -71,8 +80,9 @@ mod integration {
 
     #[test]
     fn syscall_filter() {
-        let trace_path =
-            exec_analyzer_command("record_3", &["record", "--syscalls", "openat"], None);
+        let cid = get_cid!("record_3");
+        let trace_path = get_tracefs_path!(cid);
+        exec_analyzer_command(cid, &["record", "--syscalls", "openat"], None);
         assert!(fs::metadata(&trace_path).is_ok());
         assert_eq!(
             "X\n",
@@ -130,7 +140,9 @@ mod integration {
 
     #[test]
     fn trace_start_with_annotations() {
-        let trace_path = exec_analyzer_command("record_4", &["record", "--use-annots"], Some(true));
+        let cid = get_cid!("record_4");
+        let trace_path = get_tracefs_path!(cid);
+        exec_analyzer_command(cid, &["record", "--use-annots"], Some(true));
         assert!(fs::metadata(&trace_path).is_ok());
         assert_eq!(
             "1\n",
@@ -144,20 +156,25 @@ mod integration {
 
     #[test]
     fn trace_does_not_start_with_use_annots() {
-        let trace_path = exec_analyzer_command("record_5", &["record", "--use-annots"], None);
+        let cid = get_cid!("record_5");
+        let trace_path = get_tracefs_path!(cid);
+        exec_analyzer_command(cid, &["record", "--use-annots"], None);
         assert!(fs::metadata(&trace_path).is_err());
     }
 
     #[test]
     fn trace_does_not_start_with_annotations_false() {
-        let trace_path =
-            exec_analyzer_command("record_6", &["record", "--use-annots"], Some(false));
+        let cid = get_cid!("record_6");
+        let trace_path = get_tracefs_path!(cid);
+        exec_analyzer_command(cid, &["record", "--use-annots"], Some(false));
         assert!(fs::metadata(&trace_path).is_err());
     }
 
     #[test]
     fn error_filter() {
-        let trace_path = exec_analyzer_command("record_7", &["record", "--error-only"], None);
+        let cid = get_cid!("record_7");
+        let trace_path = get_tracefs_path!(cid);
+        exec_analyzer_command(cid, &["record", "--error-only"], None);
         assert!(fs::metadata(&trace_path).is_ok());
         assert_eq!(
             "ret < 0\n",
@@ -175,9 +192,10 @@ mod integration {
 
     #[test]
     fn report() {
-        exec_analyzer_command("report_1", &["record"], None);
+        let cid = get_cid!("report_1");
+        exec_analyzer_command(cid, &["record"], None);
         let log = &"./ftrace_syscalls_dump_1.log";
-        exec_analyzer_command("report_1", &["report", "--output", log], None);
+        exec_analyzer_command(cid, &["report", "--output", log], None);
         assert!(fs::metadata(log).is_ok());
         let mut buf = String::new();
         BufReader::new(fs::File::open(&log).unwrap())
@@ -189,14 +207,11 @@ mod integration {
 
     #[test]
     fn report_livedump() {
-        let trace_path = exec_analyzer_command("report_2", &["record"], None);
-        let cid = &format!("analyzer_test_report_2_{}", process::id());
+        let cid = get_cid!("report_2");
+        let trace_path = get_tracefs_path!(cid);
+        exec_analyzer_command(cid, &["record"], None);
         let log = &"./ftrace_syscalls_dump_2.log";
-        exec_analyzer_command(
-            "report_2",
-            &["report", "--output", log, "--livedump", cid],
-            None,
-        );
+        exec_analyzer_command(cid, &["report", "--output", log, "--livedump", cid], None);
         assert!(fs::metadata(log).is_ok());
         let mut buf = String::new();
         BufReader::new(fs::File::open(&log).unwrap())
@@ -209,11 +224,13 @@ mod integration {
 
     #[test]
     fn report_profile() {
-        let trace_path = exec_analyzer_command("report_3", &["record"], None);
+        let cid = get_cid!("report_3");
+        let trace_path = get_tracefs_path!(cid);
+        exec_analyzer_command(cid, &["record"], None);
         let log = &"./ftrace_syscalls_dump_3.log";
         let profile = &"./seccomp_profile_3.json";
         exec_analyzer_command(
-            "report_3",
+            cid,
             &["report", "--output", log, "--seccomp-profile", profile],
             None,
         );
@@ -234,8 +251,9 @@ mod integration {
 
     #[test]
     fn report_conflict_between_livedump_and_profile() {
-        let trace_path = exec_analyzer_command("report_4", &["record"], None);
-        let cid = &format!("analyzer_test_report_4_{}", process::id());
+        let cid = get_cid!("report_4");
+        let trace_path = get_tracefs_path!(cid);
+        exec_analyzer_command(cid, &["record"], None);
         let log = &"./ftrace_syscalls_dump_4.log";
         let profile = &"./seccomp_profile_4.json";
         let mut child = Command::new("./target/debug/oci-ftrace-syscall-analyzer")
