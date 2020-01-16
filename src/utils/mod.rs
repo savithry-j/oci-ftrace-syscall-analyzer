@@ -14,6 +14,13 @@ pub fn get_states_from_stdin() -> Value {
     state_vals
 }
 
+#[test]
+fn test_search_tracefs_path() {
+    let tracefs_path = search_tracefs_path();
+    assert!(tracefs_path.is_ok());
+    assert!(std::fs::metadata(&tracefs_path.unwrap()).is_ok());
+}
+
 pub fn search_tracefs_path() -> Result<String, String> {
     let mut path;
     path = format!("{:#?}", "");

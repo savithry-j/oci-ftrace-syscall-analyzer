@@ -14,6 +14,15 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::process;
 
+#[test]
+fn test_convert_syscall_id() {
+    let syscall_info = syscall_info!();
+    assert_eq!(
+        convert_syscall_id(&format!("aaaaaa:NR {} ", libc::SYS_accept), &syscall_info),
+        Some("accept".to_string())
+    );
+}
+
 fn convert_syscall_id(line: &str, syscall_info: &HashMap<i64, &str>) -> Option<String> {
     let prefix = "NR ";
     if let Some(pos) = line.rfind(prefix) {
@@ -22,6 +31,37 @@ fn convert_syscall_id(line: &str, syscall_info: &HashMap<i64, &str>) -> Option<S
         return syscall_info.get(&id).map(|s| s.to_string());
     }
     None
+}
+
+#[test]
+fn test_generate_profile() {
+    let trace_file = "/tmp/oci-ftrace-syscall-analyzer-test.log";
+    let mut file = File::create(&trace_file).unwrap();
+    write!(
+        file,
+        "NR {} \nNR {} \nNR {} \nNR {} \n",
+        libc::SYS_accept,
+        libc::SYS_execve,
+        libc::SYS_openat,
+        libc::SYS_chroot
+    )
+    .unwrap();
+    file.flush().unwrap();
+    assert_eq!(
+        serde_json::to_string_pretty(&generate_profile(&trace_file)).unwrap(),
+        serde_json::to_string_pretty(&Seccomp::new(
+            SeccompAction::ActErrno,
+            SeccompAction::ActAllow,
+            vec![
+                "chroot".to_string(),
+                "execve".to_string(),
+                "futex".to_string(),
+                "openat".to_string()
+            ]
+        ))
+        .unwrap()
+    );
+    fs::remove_file(&trace_file).unwrap();
 }
 
 fn generate_profile(trace_file: &str) -> Seccomp {
@@ -44,11 +84,30 @@ fn generate_profile(trace_file: &str) -> Seccomp {
     Seccomp::new(SeccompAction::ActErrno, SeccompAction::ActAllow, syscalls)
 }
 
+#[test]
+fn test_remove_raw_syscall() {
+    assert!(remove_raw_syscall("sys_enter:").is_none());
+    assert!(remove_raw_syscall("sys_exit:").is_none());
+    assert_eq!(
+        remove_raw_syscall("sys_execve:"),
+        Some("sys_execve:".to_string())
+    );
+}
+
 fn remove_raw_syscall(line: &str) -> Option<String> {
     if line.find("sys_enter:").is_some() || line.find("sys_exit:").is_some() {
         return None;
     }
     Some(line.to_string())
+}
+
+#[test]
+fn test_convert_error_info() {
+    let error_info = error_info!();
+    assert_eq!(
+        convert_error_info(&format!("ret=0xfffffffffffffffe"), &error_info),
+        "ret=ENOENT(no such file or directory)\n".to_string()
+    );
 }
 
 fn convert_error_info(line: &str, error_info: &HashMap<&str, err_converter::Error>) -> String {
