@@ -14,13 +14,18 @@ jobs:
     - name: Build
       run: RUSTFLAGS="-C target-feature=+crt-static" cargo build --target x86_64-unknown-linux-musl --release
     - run: strip target/x86_64-unknown-linux-musl/release/oci-ftrace-syscall-analyzer
+    - run: sudo setcap CAP_DAC_OVERRIDE+ep target/x86_64-unknown-linux-musl/release/oci-ftrace-syscall-analyzer
     - run: rustup component add clippy
     - uses: actions-rs/clippy-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         args: --all-features
     - name: Run tests
-      run: cargo test --verbose
+      run: RUSTFLAGS="-C target-feature=+crt-static" cargo build --target x86_64-unknown-linux-musl --release --tests
+    - run: sudo setcap CAP_DAC_OVERRIDE+ep target/x86_64-unknown-linux-musl/release/oci-ftrace-syscall-analyzer
+    - run: find target/x86_64-unknown-linux-musl/release/ -maxdepth 1 -not -name "*.d" -name "integ-*" | xargs sudo setcap CAP_DAC_OVERRIDE+ep
+    - run: find target/x86_64-unknown-linux-musl/release/ -maxdepth 1 -not -name "*.d" -name "oci_ftrace_syscall_analyzer-*" | xargs sudo setcap CAP_DAC_OVERRIDE+ep
+    - run: RUSTFLAGS="-C target-feature=+crt-static" cargo test --target x86_64-unknown-linux-musl --release
     - run: mkdir artifact
     - run: cp target/x86_64-unknown-linux-musl/release/oci-ftrace-syscall-analyzer artifact/oci-ftrace-syscall-analyzer.amd64
     - name: Upload artifacts
