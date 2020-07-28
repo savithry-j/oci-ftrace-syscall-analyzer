@@ -1,7 +1,6 @@
 #[macro_use]
 mod err_converter;
-#[macro_use]
-mod syscalls;
+
 mod oci_seccomp;
 
 use self::err_converter::Error;
@@ -14,21 +13,43 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::process;
 
+extern crate libc;
+
+use std::ffi::CStr;
+use std::str;
+
 #[test]
 fn test_convert_syscall_id() {
-    let syscall_info = syscall_info!();
     assert_eq!(
-        convert_syscall_id(&format!("aaaaaa:NR {} ", libc::SYS_accept), &syscall_info),
+        convert_syscall_id(&format!("aaaaaa:NR {} ", libc::SYS_accept)),
         Some("accept".to_string())
     );
 }
 
-fn convert_syscall_id(line: &str, syscall_info: &HashMap<i64, &str>) -> Option<String> {
+#[link(name = "seccomp")]
+extern "C" {
+    fn seccomp_syscall_resolve_num_arch(
+        arch: libc::int32_t,
+        syscall: libc::c_int,
+    ) -> *const libc::c_char;
+}
+
+fn libseccomp_convert_syscall_id(id: i32) -> String {
+    unsafe {
+        let c_buf = seccomp_syscall_resolve_num_arch(0, id);
+        let c_str: &CStr = CStr::from_ptr(c_buf);
+        let str_slice: &str = c_str.to_str().unwrap();
+        return str_slice.to_string();
+    }
+}
+
+fn convert_syscall_id(line: &str) -> Option<String> {
     let prefix = "NR ";
     if let Some(pos) = line.rfind(prefix) {
         let s = line.get(pos + prefix.len()..).unwrap();
-        let id: i64 = s.get(..s.find(' ').unwrap()).unwrap().parse().unwrap();
-        return syscall_info.get(&id).map(|s| s.to_string());
+        let id: i32 = s.get(..s.find(' ').unwrap()).unwrap().parse().unwrap();
+        let syscall_name = libseccomp_convert_syscall_id(id);
+        return Option::from(syscall_name.to_string());
     }
     None
 }
@@ -67,9 +88,9 @@ fn test_generate_profile() {
 fn generate_profile(trace_file: &str) -> Seccomp {
     let mut syscalls: Vec<String> = Vec::new();
     let mut invoked_from_container = false;
-    let syscall_info = syscall_info!();
+
     for line in BufReader::new(File::open(&trace_file).unwrap()).lines() {
-        if let Some(syscall) = convert_syscall_id(&line.unwrap(), &syscall_info) {
+        if let Some(syscall) = convert_syscall_id(&line.unwrap()) {
             if syscall == "execve" {
                 invoked_from_container = true;
             }
@@ -125,7 +146,7 @@ pub fn report(report_args: &ArgMatches) {
         println!("The argument '--livedump' cannot be used with '--seccomp-profile");
         process::exit(-1);
     }
-    let mut cid;
+    let cid;
     if report_args.is_present("container-id") {
         cid = report_args.value_of("container-id").unwrap().to_string();
     } else {
