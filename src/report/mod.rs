@@ -29,7 +29,7 @@ fn test_convert_syscall_id() {
 #[link(name = "seccomp")]
 extern "C" {
     fn seccomp_syscall_resolve_num_arch(
-        arch: libc::int32_t,
+        arch: libc::c_uint,
         syscall: libc::c_int,
     ) -> *const libc::c_char;
 }
