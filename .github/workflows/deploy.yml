@@ -9,6 +9,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Prepare for libseccomp
+      run: sudo apt-get install libseccomp-dev
     - name: Install musl
       run: rustup target add x86_64-unknown-linux-musl
     - name: Build
