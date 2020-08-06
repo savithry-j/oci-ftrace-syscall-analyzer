@@ -57,12 +57,49 @@ $ sudo setcap CAP_DAC_OVERRIDE+ep /usr/local/bin/oci-ftrace-syscall-analyzer
 
 ### (Advanced) Building as a Static Binary
 
-- The binary built by the above method is dynamically linked binary. But the released binary is a static binary.
+- The binary built by the above method is dynamically linked binary.
 - If you want to build static binary, you need to get MUSL support.
- - For example, on x86_64 architecture, run:
+- Since extern FFI libseccomp is used, it's required to static build libseccomp
+
+- Prerequisite
 ```
-$ rustup target add x86_64-unknown-linux-musl
-$ cargo build --target x86_64-unknown-linux-musl
+$ sudo apt install musl-tools musl-dev
+```
+
+- Build libseccomp with musl
+```
+$ cd /tmp/
+$ git clone https://github.com/seccomp/libseccomp 
+$ cd libseccomp/
+$ ./autogen.sh 
+$ CPPFLAGS="-I/usr/include/x86_64-linux-musl" ./configure --enable-static
+$ make 
+
+// After build 
+$ ls src/.libs/
+```
+- src/.libs/ use this to build oci-ftrace-syscall-analyzer
+- build oci-ftrace-syscall-analyzer
+```
+$ cd /path/to/oci-ftrace-syscall-analyzer
+$ git checkout <tag>
+// Add 'native=/tmp/libseccomp/src/.libs' to RUSTFLAGS
+```
+- **x86_64**
+```
+$ RUSTFLAGS="-C target-feature=+crt-static -L native=/tmp/libseccomp/src/.libs" cargo build --target x86_64-unknown-linux-musl --release 
+$ ldd target/x86_64-unknown-linux-musl/release/oci-ftrace-syscall-analyzer
+	not a dynamic executable
+$ file target/x86_64-unknown-linux-musl/release/oci-ftrace-syscall-analyzer 
+target/x86_64-unknown-linux-musl/release/oci-ftrace-syscall-analyzer: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, BuildID[sha1]=f011c8c8ba919b830049e37d27c6184dd4dbb0b4, with debug_info, not stripped
+```
+- **aarch64**
+```
+$ RUSTFLAGS="-C target-feature=+crt-static -L native=/tmp/libseccomp/src/.libs -C linker=aarch64-linux-gnu-gcc"  cargo build --target aarch64-unknown-linux-gnu --release 
+$ ldd target/aarch64-unknown-linux-gnu/release/oci-ftrace-syscall-analyzer
+	not a dynamic executable
+$ file target/aarch64-unknown-linux-gnu/release/oci-ftrace-syscall-analyzer 
+target/aarch64-unknown-linux-gnu/release/oci-ftrace-syscall-analyzer: ELF 64-bit LSB shared
 ```
 
 ## Usage
