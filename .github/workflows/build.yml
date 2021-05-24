@@ -19,9 +19,12 @@ jobs:
 
     - name: Prepare for libseccomp
       run: sudo apt-get install libseccomp-dev
+    
+    - name: rustup
+      run: sudo -E /usr/share/rust/.cargo/bin/rustup default stable
 
     - name: Build
       run: cargo build --verbose
 
     - name: Run tests
-      run: sudo /usr/share/rust/.cargo/bin/cargo test --verbose
+      run: sudo -E /usr/share/rust/.cargo/bin/cargo test --verbose
