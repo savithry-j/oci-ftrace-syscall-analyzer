@@ -1,7 +1,6 @@
 extern crate assert_cmd;
 
-use std::io::{BufRead, BufReader, Write};
-use std::process::Stdio;
+use std::io::{BufRead, BufReader};
 use assert_cmd::Command;
 use assert_cmd::output::OutputResult;
 use std::{fs, process, thread, time};
