@@ -15,7 +15,7 @@ use std::process;
 
 extern crate libc;
 
-use std::ffi::CStr;
+use libseccomp::*;
 use std::str;
 
 #[test]
@@ -26,21 +26,12 @@ fn test_convert_syscall_id() {
     );
 }
 
-#[link(name = "seccomp")]
-extern "C" {
-    fn seccomp_syscall_resolve_num_arch(
-        arch: libc::c_uint,
-        syscall: libc::c_int,
-    ) -> *const libc::c_char;
-}
-
 fn libseccomp_convert_syscall_id(id: i32) -> String {
-    unsafe {
-        let c_buf = seccomp_syscall_resolve_num_arch(0, id);
-        let c_str: &CStr = CStr::from_ptr(c_buf);
-        let str_slice: &str = c_str.to_str().unwrap();
-        return str_slice.to_string();
+    let name = get_syscall_name_from_arch(ScmpArch::Native, id);
+    if !name.is_err() {
+        return name.unwrap();
     }
+    return "xxxxx".to_string();
 }
 
 fn convert_syscall_id(line: &str) -> Option<String> {
@@ -49,7 +40,9 @@ fn convert_syscall_id(line: &str) -> Option<String> {
         let s = line.get(pos + prefix.len()..).unwrap();
         let id: i32 = s.get(..s.find(' ').unwrap()).unwrap().parse().unwrap();
         let syscall_name = libseccomp_convert_syscall_id(id);
-        return Option::from(syscall_name.to_string());
+        if syscall_name != "xxxxx" {
+            return Option::from(syscall_name.to_string());
+        }
     }
     None
 }
