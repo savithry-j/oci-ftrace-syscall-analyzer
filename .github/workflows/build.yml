@@ -2,9 +2,9 @@ name: Build CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ topic-fix-rustup-build-failure ]
   pull_request:
-    branches: [ master ]
+    branches: [ topic-fix-rustup-build-failure ]
 
 env:
   CARGO_TERM_COLOR: always
